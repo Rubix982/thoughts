@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "checkJs": true,
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "jsx": "preserve"
+  },
+  "include": ["**/*.js", "**/*.jsx", "lib/**/*.js"],
+  "exclude": ["node_modules", "dist"]
+}
