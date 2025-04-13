@@ -25,6 +25,7 @@ import {
 import { startTUI } from "./tui.js";
 import { processUrl } from "./lib/url-processor.js";
 import { createClaudeProcessor } from "./lib/claude-processor.js";
+import { createBitbucketProcessor } from "./lib/bitbucket-processor.js";
 import * as todoMatrix from "./lib/todo-matrix.js";
 import { startTodoTUI } from "./lib/todo-tui.js";
 
@@ -725,11 +726,17 @@ program
   .description("Save web content as a thought")
   .argument("<url>", "URL to save")
   .option("-s, --summarize", "Generate an AI summary with Claude")
-  .option("-a, --audio", "Generate audio version of the summary (requires system TTS)")
+  .option(
+    "-a, --audio",
+    "Generate audio version of the summary (requires system TTS)",
+  )
   .option("-o, --open", "Open the saved thought in your editor after saving")
   .option("-f, --force", "Force reprocessing even if URL was already saved")
   .option("--voice <voice>", "Specify TTS voice to use (system-dependent)")
-  .option("--api-key <key>", "Claude API key (can also be set via CLAUDE_API_KEY env var)")
+  .option(
+    "--api-key <key>",
+    "Claude API key (can also be set via CLAUDE_API_KEY env var)",
+  )
   .option("--model <model>", "Claude model to use", "claude-3-opus-20240229")
   .option("--max-tokens <number>", "Maximum tokens for Claude response", "4000")
   .option("--temperature <number>", "Temperature for Claude response", "0.7")
@@ -741,37 +748,49 @@ program
       console.log(chalk.blue(`Saving content from ${url}...`));
 
       let result;
-      
+
       // Add the force flag to options if specified
       options.force = options.force || false;
-      
+
       // Check if we should use Claude for summarization
       if (options.summarize) {
         // Get API key from options or environment variable
         const apiKey = options.apiKey || process.env.CLAUDE_API_KEY;
-        
+
         if (!apiKey) {
-          console.log(chalk.yellow("No Claude API key provided. Use --api-key or set CLAUDE_API_KEY environment variable."));
+          console.log(
+            chalk.yellow(
+              "No Claude API key provided. Use --api-key or set CLAUDE_API_KEY environment variable.",
+            ),
+          );
           console.log(chalk.yellow("Proceeding without AI summarization..."));
-          
+
           // Fall back to regular URL processing
           result = await processUrl(url, DEFAULT_DIR, options);
-          
+
           if (result.isExisting && !options.force) {
-            console.log(chalk.blue("URL was previously processed. Using existing content."));
+            console.log(
+              chalk.blue(
+                "URL was previously processed. Using existing content.",
+              ),
+            );
           }
         } else {
           // Configure Claude processor
           const claudeProcessor = createClaudeProcessor(apiKey);
-          
+
           // Override config if specified in options
           if (options.model) claudeProcessor.config.model = options.model;
-          if (options.maxTokens) claudeProcessor.config.maxTokens = parseInt(options.maxTokens, 10);
-          if (options.temperature) claudeProcessor.config.temperature = parseFloat(options.temperature);
-          
+          if (options.maxTokens)
+            claudeProcessor.config.maxTokens = parseInt(options.maxTokens, 10);
+          if (options.temperature)
+            claudeProcessor.config.temperature = parseFloat(
+              options.temperature,
+            );
+
           console.log(chalk.blue("Using Claude AI to enhance content..."));
           console.log(chalk.blue(`Model: ${claudeProcessor.config.model}`));
-          
+
           // Process with Claude
           const summaryOptions = {
             includeKeyPoints: true,
@@ -782,42 +801,62 @@ program
             audio: options.audio,
             generateAudio: options.audio,
             audioOptions: {
-              voice: options.voice
-            }
+              voice: options.voice,
+            },
           };
-          
+
           // Show spinner or processing message
           const startTime = Date.now();
-          
+
           // Process the URL with Claude
-          result = await claudeProcessor.processUrlWithClaude(url, DEFAULT_DIR, summaryOptions);
-          
+          result = await claudeProcessor.processUrlWithClaude(
+            url,
+            DEFAULT_DIR,
+            summaryOptions,
+          );
+
           const processingTime = ((Date.now() - startTime) / 1000).toFixed(1);
-          console.log(chalk.green(`✓ Content processed with Claude in ${processingTime}s`));
-          
+          console.log(
+            chalk.green(
+              `✓ Content processed with Claude in ${processingTime}s`,
+            ),
+          );
+
           // Show detected entities if available
           if (result.metadata.detectedEntities) {
-            const { technologies, people, companies } = result.metadata.detectedEntities;
-            
+            const { technologies, people, companies } =
+              result.metadata.detectedEntities;
+
             if (technologies && technologies.length > 0) {
-              console.log(chalk.blue("Technologies detected:"), chalk.cyan(technologies.join(", ")));
+              console.log(
+                chalk.blue("Technologies detected:"),
+                chalk.cyan(technologies.join(", ")),
+              );
             }
-            
+
             if (people && people.length > 0) {
-              console.log(chalk.blue("People mentioned:"), chalk.cyan(people.join(", ")));
+              console.log(
+                chalk.blue("People mentioned:"),
+                chalk.cyan(people.join(", ")),
+              );
             }
-            
+
             if (companies && companies.length > 0) {
-              console.log(chalk.blue("Organizations mentioned:"), chalk.cyan(companies.join(", ")));
+              console.log(
+                chalk.blue("Organizations mentioned:"),
+                chalk.cyan(companies.join(", ")),
+              );
             }
           }
         }
       } else {
         // Regular URL processing without Claude
         result = await processUrl(url, DEFAULT_DIR, options);
-        
+
         if (result.isExisting && !options.force) {
-          console.log(chalk.blue("URL was previously processed. Using existing content."));
+          console.log(
+            chalk.blue("URL was previously processed. Using existing content."),
+          );
         }
       }
 
@@ -836,11 +875,13 @@ program
           `Reading time: ~${result.metadata.contentStats.estimatedReadingTimeMinutes} minutes`,
         ),
       );
-      
+
       // Show audio info if available
       if (result.metadata.content.audioPath) {
         console.log(
-          chalk.blue(`Audio summary: ${path.join(DEFAULT_DIR, result.metadata.content.audioPath)}`),
+          chalk.blue(
+            `Audio summary: ${path.join(DEFAULT_DIR, result.metadata.content.audioPath)}`,
+          ),
         );
       }
 
@@ -886,125 +927,153 @@ program
   .description("Manage your todos using the Eisenhower Matrix")
   .option("-a, --add", "Add a new todo")
   .option("-l, --list", "List all todos")
-  .option("-t, --toggle <id>", "Toggle completion status (accepts friendly IDs like A1, B2)")
+  .option(
+    "-t, --toggle <id>",
+    "Toggle completion status (accepts friendly IDs like A1, B2)",
+  )
   .option("-e, --edit <id>", "Edit a todo (accepts friendly IDs like A1, B2)")
-  .option("-d, --delete <id>", "Delete a todo (accepts friendly IDs like A1, B2)")
-  .option("-v, --view <id>", "View todo details (accepts friendly IDs like A1, B2)")
+  .option(
+    "-d, --delete <id>",
+    "Delete a todo (accepts friendly IDs like A1, B2)",
+  )
+  .option(
+    "-v, --view <id>",
+    "View todo details (accepts friendly IDs like A1, B2)",
+  )
   .option("-s, --search <text>", "Search todos")
   .option("--priority <high|low>", "Filter by priority")
   .option("--urgency <urgent|not-urgent>", "Filter by urgency")
   .option("--completed", "Filter by completed status")
   .option("--active", "Filter by active status")
-  .option("--convert <id>", "Convert todo to thought (accepts friendly IDs like A1, B2)")
+  .option(
+    "--convert <id>",
+    "Convert todo to thought (accepts friendly IDs like A1, B2)",
+  )
   .option("--from-thought <path>", "Create todo from thought")
   .action(async (options) => {
     try {
       // Ensure the thoughts directory exists
       await ensureDirectoryExists(DEFAULT_DIR);
-      
+
       // If no options are specified or only general options, start the TUI
       const specificActionOptions = [
-        'add', 'list', 'toggle', 'edit', 'delete', 'view', 'search',
-        'convert', 'fromThought'
+        "add",
+        "list",
+        "toggle",
+        "edit",
+        "delete",
+        "view",
+        "search",
+        "convert",
+        "fromThought",
       ];
-      
-      const hasSpecificAction = specificActionOptions.some(opt => options[opt]);
-      
+
+      const hasSpecificAction = specificActionOptions.some(
+        (opt) => options[opt],
+      );
+
       if (!hasSpecificAction) {
         // Launch TUI
         await startTodoTUI(DEFAULT_DIR);
         return;
       }
-      
+
       // Handle specific commands
       if (options.add) {
-        const { title, priority, urgency, tags, description } = await inquirer.prompt([
-          {
-            type: 'input',
-            name: 'title',
-            message: 'Todo title:',
-            validate: input => input ? true : 'Title is required',
-          },
-          {
-            type: 'list',
-            name: 'priority',
-            message: 'Priority:',
-            choices: [
-              { name: 'High', value: 'high' },
-              { name: 'Low', value: 'low' },
-            ],
-            default: 'low',
-          },
-          {
-            type: 'list',
-            name: 'urgency',
-            message: 'Urgency:',
-            choices: [
-              { name: 'Urgent', value: 'urgent' },
-              { name: 'Not Urgent', value: 'not-urgent' },
-            ],
-            default: 'not-urgent',
-          },
-          {
-            type: 'input',
-            name: 'tags',
-            message: 'Tags (comma separated):',
-          },
-          {
-            type: 'input',
-            name: 'description',
-            message: 'Description:',
-          },
-        ]);
-        
+        const { title, priority, urgency, tags, description } =
+          await inquirer.prompt([
+            {
+              type: "input",
+              name: "title",
+              message: "Todo title:",
+              validate: (input) => (input ? true : "Title is required"),
+            },
+            {
+              type: "list",
+              name: "priority",
+              message: "Priority:",
+              choices: [
+                { name: "High", value: "high" },
+                { name: "Low", value: "low" },
+              ],
+              default: "low",
+            },
+            {
+              type: "list",
+              name: "urgency",
+              message: "Urgency:",
+              choices: [
+                { name: "Urgent", value: "urgent" },
+                { name: "Not Urgent", value: "not-urgent" },
+              ],
+              default: "not-urgent",
+            },
+            {
+              type: "input",
+              name: "tags",
+              message: "Tags (comma separated):",
+            },
+            {
+              type: "input",
+              name: "description",
+              message: "Description:",
+            },
+          ]);
+
         const todo = todoMatrix.createTodo(title, {
           priority,
           urgency,
-          tags: tags ? tags.split(',').map(t => t.trim()) : [],
+          tags: tags ? tags.split(",").map((t) => t.trim()) : [],
           description,
         });
-        
+
         await todoMatrix.addTodo(DEFAULT_DIR, todo);
         console.log(chalk.green(`Todo added: ${title}`));
       }
-      
+
       if (options.list) {
         // Get todo matrix
         const matrix = await todoMatrix.loadTodoMatrix(DEFAULT_DIR);
-        
+
         // Apply filters if specified
         let filteredTodos = [];
-        
-        for (const quadrant of ['important_urgent', 'important_not_urgent', 'not_important_urgent', 'not_important_not_urgent']) {
+
+        for (const quadrant of [
+          "important_urgent",
+          "important_not_urgent",
+          "not_important_urgent",
+          "not_important_not_urgent",
+        ]) {
           // Apply filters within each quadrant
           let todos = [...matrix[quadrant]];
-          
+
           if (options.completed) {
-            todos = todos.filter(todo => todo.completed);
+            todos = todos.filter((todo) => todo.completed);
           } else if (options.active) {
-            todos = todos.filter(todo => !todo.completed);
+            todos = todos.filter((todo) => !todo.completed);
           }
-          
+
           if (options.priority) {
-            todos = todos.filter(todo => todo.priority === options.priority);
+            todos = todos.filter((todo) => todo.priority === options.priority);
           }
-          
+
           if (options.urgency) {
-            todos = todos.filter(todo => todo.urgency === options.urgency);
+            todos = todos.filter((todo) => todo.urgency === options.urgency);
           }
-          
+
           if (options.search) {
             const searchText = options.search.toLowerCase();
-            todos = todos.filter(todo => 
-              todo.title.toLowerCase().includes(searchText) ||
-              todo.description.toLowerCase().includes(searchText)
+            todos = todos.filter(
+              (todo) =>
+                todo.title.toLowerCase().includes(searchText) ||
+                todo.description.toLowerCase().includes(searchText),
             );
           }
-          
+
           if (todos.length > 0) {
             const color = todoMatrix.getQuadrantColor(quadrant);
             const title = todoMatrix.getQuadrantName(quadrant);
-            
+
             filteredTodos.push({
               quadrant,
               title,
@@ -1013,295 +1082,613 @@ program
             });
           }
         }
-        
+
         // Display results
         if (filteredTodos.length === 0) {
-          console.log(chalk.yellow('No todos match the specified filters.'));
+          console.log(chalk.yellow("No todos match the specified filters."));
         } else {
           for (const { quadrant, title, color, todos } of filteredTodos) {
             console.log(color(`\n${title} (${todos.length}):`));
-            console.log(color('-'.repeat(title.length + 10)));
-            
+            console.log(color("-".repeat(title.length + 10)));
+
             todos.forEach((todo, i) => {
               // Generate a display ID for each todo using our helper function
               const displayId = todoMatrix.generateDisplayId(matrix, todo);
               // Store the display ID on the todo for future reference
               todo.displayId = displayId;
-              
-              const status = todo.completed ? '✓' : '☐';
-              const titleText = todo.completed ? chalk.gray(todo.title) : todo.title;
-              console.log(`${i + 1}. ${chalk.bold(displayId)}: [${status}] ${titleText}`);
-              
+
+              const status = todo.completed ? "✓" : "☐";
+              const titleText = todo.completed
+                ? chalk.gray(todo.title)
+                : todo.title;
+              console.log(
+                `${i + 1}. ${chalk.bold(displayId)}: [${status}] ${titleText}`,
+              );
+
               if (todo.tags.length > 0) {
-                console.log(`   Tags: ${todo.tags.join(', ')}`);
+                console.log(`   Tags: ${todo.tags.join(", ")}`);
               }
-              
+
               if (todo.description) {
-                const shortDesc = todo.description.length > 50 
-                  ? todo.description.substring(0, 47) + '...'
-                  : todo.description;
+                const shortDesc =
+                  todo.description.length > 50
+                    ? todo.description.substring(0, 47) + "..."
+                    : todo.description;
                 console.log(`   ${chalk.gray(shortDesc)}`);
               }
             });
           }
-          
+
           // Add a helpful tip at the end
-          console.log(chalk.blue("\nTip: You can now use the short IDs (A1, B2, etc.) with commands:"));
+          console.log(
+            chalk.blue(
+              "\nTip: You can now use the short IDs (A1, B2, etc.) with commands:",
+            ),
+          );
           console.log(chalk.blue("  thoughts todo --toggle A1"));
           console.log(chalk.blue("  thoughts todo --edit B2"));
           console.log(chalk.blue("  thoughts todo --view C3"));
         }
       }
-      
+
       if (options.toggle) {
         await todoMatrix.toggleTodo(DEFAULT_DIR, options.toggle);
         const todo = await todoMatrix.getTodoById(DEFAULT_DIR, options.toggle);
-        
+
         if (todo) {
-          console.log(chalk.green(`Todo status updated: [${todo.completed ? '✓' : '☐'}] ${todo.title}`));
+          console.log(
+            chalk.green(
+              `Todo status updated: [${todo.completed ? "✓" : "☐"}] ${todo.title}`,
+            ),
+          );
         }
       }
-      
+
       if (options.edit) {
         const todo = await todoMatrix.getTodoById(DEFAULT_DIR, options.edit);
-        
+
         if (!todo) {
           console.log(chalk.red(`Todo with ID ${options.edit} not found.`));
           return;
         }
-        
-        const { title, priority, urgency, completed, tags, description } = await inquirer.prompt([
-          {
-            type: 'input',
-            name: 'title',
-            message: 'Todo title:',
-            default: todo.title,
-            validate: input => input ? true : 'Title is required',
-          },
-          {
-            type: 'list',
-            name: 'priority',
-            message: 'Priority:',
-            choices: [
-              { name: 'High', value: 'high' },
-              { name: 'Low', value: 'low' },
-            ],
-            default: todo.priority,
-          },
-          {
-            type: 'list',
-            name: 'urgency',
-            message: 'Urgency:',
-            choices: [
-              { name: 'Urgent', value: 'urgent' },
-              { name: 'Not Urgent', value: 'not-urgent' },
-            ],
-            default: todo.urgency,
-          },
-          {
-            type: 'confirm',
-            name: 'completed',
-            message: 'Completed:',
-            default: todo.completed,
-          },
-          {
-            type: 'input',
-            name: 'tags',
-            message: 'Tags (comma separated):',
-            default: todo.tags.join(', '),
-          },
-          {
-            type: 'input',
-            name: 'description',
-            message: 'Description:',
-            default: todo.description,
-          },
-        ]);
-        
+
+        const { title, priority, urgency, completed, tags, description } =
+          await inquirer.prompt([
+            {
+              type: "input",
+              name: "title",
+              message: "Todo title:",
+              default: todo.title,
+              validate: (input) => (input ? true : "Title is required"),
+            },
+            {
+              type: "list",
+              name: "priority",
+              message: "Priority:",
+              choices: [
+                { name: "High", value: "high" },
+                { name: "Low", value: "low" },
+              ],
+              default: todo.priority,
+            },
+            {
+              type: "list",
+              name: "urgency",
+              message: "Urgency:",
+              choices: [
+                { name: "Urgent", value: "urgent" },
+                { name: "Not Urgent", value: "not-urgent" },
+              ],
+              default: todo.urgency,
+            },
+            {
+              type: "confirm",
+              name: "completed",
+              message: "Completed:",
+              default: todo.completed,
+            },
+            {
+              type: "input",
+              name: "tags",
+              message: "Tags (comma separated):",
+              default: todo.tags.join(", "),
+            },
+            {
+              type: "input",
+              name: "description",
+              message: "Description:",
+              default: todo.description,
+            },
+          ]);
+
         const updates = {
           title,
           priority,
           urgency,
           completed,
-          tags: tags ? tags.split(',').map(t => t.trim()) : [],
+          tags: tags ? tags.split(",").map((t) => t.trim()) : [],
           description,
         };
-        
+
         await todoMatrix.updateTodo(DEFAULT_DIR, options.edit, updates);
         console.log(chalk.green(`Todo updated: ${title}`));
       }
-      
+
       if (options.delete) {
         const todo = await todoMatrix.getTodoById(DEFAULT_DIR, options.delete);
-        
+
         if (!todo) {
           console.log(chalk.red(`Todo with ID ${options.delete} not found.`));
           return;
         }
-        
+
         const { confirm } = await inquirer.prompt([
           {
-            type: 'confirm',
-            name: 'confirm',
+            type: "confirm",
+            name: "confirm",
             message: `Are you sure you want to delete todo "${todo.title}"?`,
             default: false,
           },
         ]);
-        
+
         if (confirm) {
           await todoMatrix.deleteTodo(DEFAULT_DIR, options.delete);
           console.log(chalk.green(`Todo deleted: ${todo.title}`));
         }
       }
-      
+
       if (options.view) {
         const todo = await todoMatrix.getTodoById(DEFAULT_DIR, options.view);
-        
+
         if (!todo) {
           console.log(chalk.red(`Todo with ID ${options.view} not found.`));
           return;
         }
-        
+
         const quadrant = todoMatrix.getQuadrantKey(todo);
         const quadrantName = todoMatrix.getQuadrantName(quadrant);
         const color = todoMatrix.getQuadrantColor(quadrant);
-        
+
         // Generate the user-friendly display ID
         const matrix = await todoMatrix.loadTodoMatrix(DEFAULT_DIR);
         const displayId = todoMatrix.generateDisplayId(matrix, todo);
-        
+
         console.log(color(`\n${todo.title}`));
-        console.log(color('-'.repeat(todo.title.length + 10)));
-        console.log(`ID: ${chalk.bold(displayId)} (internal: ${todo.id.substring(0, 8)}...)`);
-        console.log(`Status: ${todo.completed ? '✓ Completed' : '☐ Active'}`);
+        console.log(color("-".repeat(todo.title.length + 10)));
+        console.log(
+          `ID: ${chalk.bold(displayId)} (internal: ${todo.id.substring(0, 8)}...)`,
+        );
+        console.log(`Status: ${todo.completed ? "✓ Completed" : "☐ Active"}`);
         console.log(`Quadrant: ${quadrantName}`);
-        console.log(`Priority: ${todo.priority === 'high' ? 'High' : 'Low'}`);
-        console.log(`Urgency: ${todo.urgency === 'urgent' ? 'Urgent' : 'Not Urgent'}`);
-        
+        console.log(`Priority: ${todo.priority === "high" ? "High" : "Low"}`);
+        console.log(
+          `Urgency: ${todo.urgency === "urgent" ? "Urgent" : "Not Urgent"}`,
+        );
+
         if (todo.completedAt) {
-          console.log(`Completed: ${new Date(todo.completedAt).toLocaleString()}`);
+          console.log(
+            `Completed: ${new Date(todo.completedAt).toLocaleString()}`,
+          );
         }
-        
+
         console.log(`Created: ${new Date(todo.createdAt).toLocaleString()}`);
-        
+
         if (todo.tags.length > 0) {
-          console.log(`Tags: ${todo.tags.join(', ')}`);
+          console.log(`Tags: ${todo.tags.join(", ")}`);
         }
-        
+
         if (todo.description) {
           console.log(`\nDescription:\n${todo.description}`);
         }
-        
+
         if (todo.links.length > 0) {
           console.log(`\nLinks:`);
           todo.links.forEach((link, i) => {
             console.log(`${i + 1}. ${link}`);
           });
         }
-        
+
         // Show hint about using the ID in commands
-        console.log(chalk.blue(`\nTip: You can refer to this todo with the ID ${chalk.bold(displayId)} in commands like:`));
+        console.log(
+          chalk.blue(
+            `\nTip: You can refer to this todo with the ID ${chalk.bold(displayId)} in commands like:`,
+          ),
+        );
         console.log(chalk.blue(`  thoughts todo --toggle ${displayId}`));
         console.log(chalk.blue(`  thoughts todo --edit ${displayId}`));
       }
-      
+
       if (options.search) {
-        const results = await todoMatrix.searchTodos(DEFAULT_DIR, { text: options.search });
-        
+        const results = await todoMatrix.searchTodos(DEFAULT_DIR, {
+          text: options.search,
+        });
+
         if (results.length === 0) {
-          console.log(chalk.yellow(`No todos found matching "${options.search}".`));
+          console.log(
+            chalk.yellow(`No todos found matching "${options.search}".`),
+          );
         } else {
-          console.log(chalk.blue(`\nSearch results for "${options.search}" (${results.length}):`));
-          console.log(chalk.blue('-'.repeat(50)));
-          
+          console.log(
+            chalk.blue(
+              `\nSearch results for "${options.search}" (${results.length}):`,
+            ),
+          );
+          console.log(chalk.blue("-".repeat(50)));
+
           // Group results by quadrant to maintain correct numbering
           const todosByQuadrant = {
-            'important_urgent': [],
-            'important_not_urgent': [],
-            'not_important_urgent': [],
-            'not_important_not_urgent': []
+            important_urgent: [],
+            important_not_urgent: [],
+            not_important_urgent: [],
+            not_important_not_urgent: [],
           };
-          
+
           // Load the full matrix for generating display IDs
           const matrix = await todoMatrix.loadTodoMatrix(DEFAULT_DIR);
-          
+
           // First pass: group todos by quadrant
-          results.forEach(todo => {
+          results.forEach((todo) => {
             const quadrant = todoMatrix.getQuadrantKey(todo);
             todosByQuadrant[quadrant].push(todo);
           });
-          
+
           // Second pass: display todos with correct IDs
           let displayIndex = 1;
-          
+
           // Display each quadrant's todos
           for (const [quadrant, todos] of Object.entries(todosByQuadrant)) {
             if (todos.length === 0) continue;
-            
-            console.log(chalk.bold(`\n${todoMatrix.getQuadrantName(quadrant)}:`));
-            
+
+            console.log(
+              chalk.bold(`\n${todoMatrix.getQuadrantName(quadrant)}:`),
+            );
+
             todos.forEach((todo, i) => {
               // Generate a display ID for each todo
               const displayId = todoMatrix.generateDisplayId(matrix, todo);
-              const status = todo.completed ? '✓' : '☐';
-              const titleText = todo.completed ? chalk.gray(todo.title) : todo.title;
-              
+              const status = todo.completed ? "✓" : "☐";
+              const titleText = todo.completed
+                ? chalk.gray(todo.title)
+                : todo.title;
+
               // Store the human-readable ID for reference
               todo.displayId = displayId;
-              
-              console.log(`${displayIndex}. ${chalk.bold(displayId)}: [${status}] ${titleText}`);
+
+              console.log(
+                `${displayIndex}. ${chalk.bold(displayId)}: [${status}] ${titleText}`,
+              );
               displayIndex++;
-              
+
               if (todo.tags.length > 0) {
-                console.log(`   Tags: ${todo.tags.join(', ')}`);
+                console.log(`   Tags: ${todo.tags.join(", ")}`);
               }
-              
+
               if (todo.description) {
-                const shortDesc = todo.description.length > 50 
-                  ? todo.description.substring(0, 47) + '...'
-                  : todo.description;
+                const shortDesc =
+                  todo.description.length > 50
+                    ? todo.description.substring(0, 47) + "..."
+                    : todo.description;
                 console.log(`   ${chalk.gray(shortDesc)}`);
               }
-              
-              console.log('');
+
+              console.log("");
             });
-            
+
             // Add a helpful tip at the end
-            console.log(chalk.blue("\nTip: You can now use the short IDs (A1, B2, etc.) with commands:"));
+            console.log(
+              chalk.blue(
+                "\nTip: You can now use the short IDs (A1, B2, etc.) with commands:",
+              ),
+            );
             console.log(chalk.blue("  thoughts todo --toggle A1"));
             console.log(chalk.blue("  thoughts todo --edit B2"));
             console.log(chalk.blue("  thoughts todo --view C3"));
           }
         }
       }
-      
+
       if (options.convert) {
         const todo = await todoMatrix.getTodoById(DEFAULT_DIR, options.convert);
-        
+
         if (!todo) {
           console.log(chalk.red(`Todo with ID ${options.convert} not found.`));
           return;
         }
-        
-        const filePath = await todoMatrix.todoToThought(DEFAULT_DIR, options.convert);
+
+        const filePath = await todoMatrix.todoToThought(
+          DEFAULT_DIR,
+          options.convert,
+        );
         console.log(chalk.green(`Created thought from todo: ${filePath}`));
       }
-      
+
       if (options.fromThought) {
         const thoughtPath = path.isAbsolute(options.fromThought)
           ? options.fromThought
           : path.join(DEFAULT_DIR, options.fromThought);
-        
-        if (!await fs.pathExists(thoughtPath)) {
+
+        if (!(await fs.pathExists(thoughtPath))) {
           console.log(chalk.red(`Thought file not found: ${thoughtPath}`));
           return;
         }
-        
+
         const todo = await todoMatrix.thoughtToTodo(DEFAULT_DIR, thoughtPath);
         console.log(chalk.green(`Created todo from thought: ${todo.title}`));
       }
     } catch (err) {
       console.error(`Error: ${err.message}`);
+      process.exit(1);
+    }
+  });
+
+// Bitbucket PR commands
+program
+  .command("pr")
+  .description("Work with Bitbucket pull requests")
+  .option("-s, --save <url>", "Save a Bitbucket PR as a thought")
+  .option("-l, --list [limit]", "List saved PRs (with optional limit)")
+  .option("-c, --config", "Configure Bitbucket connection")
+  .option("-t, --tags <tags>", "Add custom tags (comma-separated)")
+  .option("-n, --notes <notes>", "Add personal notes")
+  .option("--summarize", "Generate an AI-enhanced summary with Claude")
+  .option(
+    "--api-key <key>",
+    "Claude API key (can also be set via CLAUDE_API_KEY env var)",
+  )
+  .option("--search <text>", "Search PRs by text in title or tags")
+  .option("--tag <tag>", "Filter PRs by tag")
+  .option("--author <author>", "Filter PRs by author")
+  .option("--status <status>", "Filter PRs by status (OPEN, MERGED, etc.)")
+  .option(
+    "--file-type <type>",
+    "Filter PRs by file type (javascript, python, etc.)",
+  )
+  .option("--show-tags", "Show all available tags")
+  .action(async (options) => {
+    try {
+      // Ensure thoughts directory exists
+      await ensureDirectoryExists(DEFAULT_DIR);
+
+      // Create config directory if needed
+      const configDir = path.join(
+        process.env.HOME || process.env.USERPROFILE,
+        ".thoughts",
+      );
+      await fs.mkdir(configDir, { recursive: true });
+
+      // Path to Bitbucket config file
+      const configPath = path.join(configDir, "bitbucket.json");
+
+      // Check if we need to configure Bitbucket
+      if (options.config) {
+        const { baseUrl, username, appPassword } = await inquirer.prompt([
+          {
+            type: "input",
+            name: "baseUrl",
+            message:
+              "Bitbucket Server URL (e.g., https://bitbucket.example.com):",
+            validate: (input) => (input ? true : "Bitbucket URL is required"),
+          },
+          {
+            type: "input",
+            name: "username",
+            message: "Bitbucket username:",
+            validate: (input) => (input ? true : "Username is required"),
+          },
+          {
+            type: "password",
+            name: "appPassword",
+            message: "Bitbucket app password or token:",
+            validate: (input) =>
+              input ? true : "App password or token is required",
+          },
+        ]);
+
+        // Save config
+        await fs.writeFile(
+          configPath,
+          JSON.stringify(
+            {
+              baseUrl,
+              username,
+              appPassword,
+            },
+            null,
+            2,
+          ),
+        );
+
+        console.log(chalk.green("Bitbucket configuration saved!"));
+        return;
+      }
+
+      // Check if config exists
+      let config;
+      try {
+        const configData = await fs.readFile(configPath, "utf8");
+        config = JSON.parse(configData);
+      } catch (error) {
+        console.log(chalk.yellow("Bitbucket not configured yet."));
+        console.log(chalk.blue("Please run: thoughts pr --config"));
+        return;
+      }
+
+      // Create Bitbucket processor
+      const bitbucketProcessor = createBitbucketProcessor(config);
+
+      // Save PR as thought
+      if (options.save) {
+        console.log(chalk.blue(`Fetching PR details from: ${options.save}`));
+
+        // Check if we should use Claude for AI summaries
+        let claudeApiKey = null;
+        if (options.summarize) {
+          // Get API key from options or environment variable
+          claudeApiKey = options.apiKey || process.env.CLAUDE_API_KEY;
+
+          if (!claudeApiKey) {
+            console.log(
+              chalk.yellow(
+                "No Claude API key provided. Use --api-key or set CLAUDE_API_KEY environment variable.",
+              ),
+            );
+            console.log(
+              chalk.yellow("Proceeding without AI-enhanced summarization..."),
+            );
+          } else {
+            console.log(chalk.blue("Using Claude AI to enhance PR summary..."));
+          }
+        }
+
+        const result = await bitbucketProcessor.savePRAsThought(
+          options.save,
+          DEFAULT_DIR,
+          {
+            tags: options.tags,
+            notes: options.notes,
+            claudeApiKey: claudeApiKey,
+          },
+        );
+
+        console.log(chalk.green("PR saved successfully!"));
+        console.log(chalk.blue(`Title: ${result.title}`));
+        console.log(chalk.blue(`Saved to: ${result.filepath}`));
+        console.log(chalk.blue(`Tags: ${result.tags.join(", ")}`));
+
+        // Auto-commit if git is set up
+        await autoCommitChanges();
+        return;
+      }
+
+      // Show available tags
+      if (options.showTags) {
+        const tags = await bitbucketProcessor.getAllTags(DEFAULT_DIR);
+
+        if (tags.length === 0) {
+          console.log(chalk.yellow("No tags found in saved PRs."));
+          return;
+        }
+
+        console.log(chalk.bold("Available tags:"));
+        tags.forEach(({ tag, count }) => {
+          console.log(`${tag} (${count})`);
+        });
+        return;
+      }
+
+      // Search/list PRs
+      const searchQuery = {};
+
+      if (options.search) searchQuery.text = options.search;
+      if (options.tag) searchQuery.tag = options.tag;
+      if (options.author) searchQuery.author = options.author;
+      if (options.status) searchQuery.status = options.status;
+      if (options.fileType) searchQuery.fileType = options.fileType;
+
+      if (options.list && !isNaN(parseInt(options.list))) {
+        searchQuery.limit = parseInt(options.list);
+      }
+
+      const prs = await bitbucketProcessor.searchPRs(DEFAULT_DIR, searchQuery);
+
+      if (prs.length === 0) {
+        console.log(chalk.yellow("No PRs found matching your criteria."));
+        return;
+      }
+
+      console.log(chalk.bold(`Found ${prs.length} PR(s):\n`));
+
+      prs.forEach((pr, index) => {
+        const formattedDate = format(
+          new Date(pr.savedDate),
+          "yyyy-MM-dd HH:mm:ss",
+        );
+
+        console.log(
+          chalk.green(
+            `${index + 1}. ${pr.title} (${chalk.blue(formattedDate)})`,
+          ),
+        );
+
+        console.log(`   Status: ${pr.status}`);
+        console.log(`   Author: ${pr.author}`);
+
+        // Show summary if available
+        if (pr.summary) {
+          // Format the summary: take first line and limit to reasonable length
+          const summaryFirstLine = pr.summary.split("\n")[0];
+          const shortenedSummary =
+            summaryFirstLine.length > 100
+              ? summaryFirstLine.substring(0, 100) + "..."
+              : summaryFirstLine;
+          console.log(
+            `   Summary: ${chalk.cyan(shortenedSummary)}${pr.aiEnhancedSummary ? chalk.magenta(" ✨ AI-enhanced") : ""}`,
+          );
+        }
+
+        // Show files changed count if available
+        if (pr.changedFiles) {
+          console.log(`   Changes: ${pr.changedFiles} files`);
+
+          // Show a sample of changed files if available
+          if (pr.changedFileNames && pr.changedFileNames.length > 0) {
+            const fileDisplay =
+              pr.changedFileNames.length <= 3
+                ? pr.changedFileNames.join(", ")
+                : `${pr.changedFileNames.slice(0, 3).join(", ")}, ...`;
+            console.log(`   Files: ${fileDisplay}`);
+          }
+        }
+
+        // Show tags (limited to a reasonable number)
+        const displayTags = pr.tags.slice(0, 6);
+        const moreTags =
+          pr.tags.length > displayTags.length
+            ? ` + ${pr.tags.length - displayTags.length} more`
+            : "";
+        console.log(`   Tags: ${displayTags.join(", ")}${moreTags}`);
+
+        // Make the path clickable if the terminal supports it
+        const thoughtPath = path.join(DEFAULT_DIR, pr.thoughtFile);
+        const shortPath = thoughtPath.replace(DEFAULT_DIR, "~/thoughts");
+        if (terminalLink.isSupported) {
+          console.log(`   ${terminalLink(shortPath, `file://${thoughtPath}`)}`);
+        } else {
+          console.log(`   ${shortPath}`);
+        }
+
+        console.log(""); // Add a blank line between entries
+      });
+
+      // Offer to open one of the found PRs
+      if (prs.length > 0) {
+        const { choice } = await inquirer.prompt([
+          {
+            type: "input",
+            name: "choice",
+            message: "Enter number to open (or press Enter to cancel):",
+            validate: (input) => {
+              if (input === "") return true;
+              const num = parseInt(input, 10);
+              if (isNaN(num) || num < 1 || num > prs.length) {
+                return `Please enter a number between 1 and ${prs.length}`;
+              }
+              return true;
+            },
+          },
+        ]);
+
+        if (choice !== "") {
+          const selected = prs[parseInt(choice, 10) - 1];
+          const thoughtPath = path.join(DEFAULT_DIR, selected.thoughtFile);
+          await openEditor(thoughtPath);
+        }
+      }
+    } catch (error) {
+      console.error(chalk.red(`Error working with PRs: ${error.message}`));
+      if (error.response && error.response.data) {
+        console.error(chalk.red("API Error details:"), error.response.data);
+      }
       process.exit(1);
     }
   });
