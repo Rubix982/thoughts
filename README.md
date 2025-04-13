@@ -1,36 +1,80 @@
 # Thoughts
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
 A simple CLI utility for quickly capturing and searching thoughts in your terminal.
 
-## Features
+## 📋 Table of Contents
 
-- Create notes quickly from your terminal
-- Search through your thoughts with full-text search
-- Filter thoughts by date ranges
-- View recent thoughts with preview
-- Open directly in your preferred editor
-- Color-highlighted search results
-- Clickable file paths (in supported terminals)
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Creating New Thoughts](#creating-new-thoughts)
+  - [Searching Your Thoughts](#searching-your-thoughts)
+  - [Listing Recent Thoughts](#listing-recent-thoughts)
+  - [Opening Thoughts](#opening-thoughts)
+- [Configuration](#configuration)
+- [Sync & Backup](#sync--backup)
+  - [Git Version Control](#git-version-control)
+  - [Cloud Service Integration](#cloud-service-integration)
+  - [Automatic Backups](#automatic-backups)
+- [Terminal User Interface (TUI)](#terminal-user-interface-tui)
+  - [TUI Features](#tui-features)
+  - [TUI Keyboard Shortcuts](#tui-keyboard-shortcuts)
+- [Web Content Capture](#web-content-capture)
+  - [Claude AI Integration for Summaries](#claude-ai-integration-for-summaries)
+  - [Audio Summaries](#audio-summaries)
+- [Bitbucket PR Integration](#bitbucket-pr-integration)
+  - [Why Use PR Integration](#why-use-pr-integration)
+  - [Setup](#setup)
+  - [Saving Pull Requests](#saving-pull-requests)
+  - [AI-Enhanced Summaries](#ai-enhanced-summaries)
+  - [What Gets Captured](#what-gets-captured)
+  - [Finding Pull Requests](#finding-pull-requests)
+  - [Search Results and Interaction](#search-results-and-interaction)
+- [Claude AI Integration](#claude-ai-integration)
+  - [Available Claude Features](#available-claude-features)
+  - [Configuring Claude](#configuring-claude)
+  - [API Key Management](#api-key-management)
+- [Command Reference](#command-reference)
+- [Contributing](#contributing)
+- [License](#license)
 
-## Installation
+## ✨ Features
+
+- 📝 Create notes quickly from your terminal
+- 🔍 Search through your thoughts with full-text search
+- 📅 Filter thoughts by date ranges
+- 👀 View recent thoughts with preview
+- 📂 Open directly in your preferred editor
+- 🌈 Color-highlighted search results
+- 🔗 Clickable file paths (in supported terminals)
+
+## 🚀 Installation
 
 1. Clone this repository
-2. Install dependencies:
+   ```bash
+   git clone https://github.com/yourusername/thoughts.git
+   cd thoughts
    ```
+
+2. Install dependencies:
+   ```bash
    npm install
    ```
+
 3. Install globally:
-   ```
+   ```bash
    npm install -g .
    ```
 
-## Usage
+## 📖 Usage
 
 ### Creating New Thoughts
 
 Simply type `thoughts` or `thoughts new` in your terminal:
 
-```
+```bash
 thoughts
 ```
 
@@ -40,13 +84,13 @@ You'll be prompted for a title, then your default editor will open.
 
 Search for specific text in all your thoughts:
 
-```
+```bash
 thoughts search "keyword"
 ```
 
 Use fuzzy search for more flexible matching:
 
-```
+```bash
 thoughts search "keywrd" --fuzzy             # Find "keyword" even with typos
 thoughts search "meetnotes" --fuzzy          # Will find "meeting notes"
 thoughts search --fuzzy --threshold 0.3      # Lower threshold = stricter matching
@@ -54,7 +98,7 @@ thoughts search --fuzzy --threshold 0.3      # Lower threshold = stricter matchi
 
 Search with date filters:
 
-```
+```bash
 thoughts search --date 2025-04-06            # Specific date
 thoughts search --after 2025-01-01           # After Jan 1, 2025
 thoughts search --before 2025-04-01          # Before April 1, 2025
@@ -63,19 +107,19 @@ thoughts search "keyword" --after 2025-01-01 # Combine text and date
 
 Show content previews:
 
-```
+```bash
 thoughts search "keyword" --preview 3        # Show 3 lines of preview
 ```
 
 Limit results:
 
-```
+```bash
 thoughts search --limit 5                    # Show only 5 results
 ```
 
 Change sort order:
 
-```
+```bash
 thoughts search --oldest                     # Oldest first (default is newest)
 ```
 
@@ -83,7 +127,7 @@ thoughts search --oldest                     # Oldest first (default is newest)
 
 List your most recent thoughts:
 
-```
+```bash
 thoughts list                                # Shows 10 most recent by default
 thoughts list --limit 5                      # Show only 5 most recent
 ```
@@ -94,11 +138,11 @@ After searching or listing, you'll be prompted to open any of the thoughts by en
 
 You can also directly open a thought by its number in the recent list:
 
-```
+```bash
 thoughts open 1                              # Opens the most recent thought
 ```
 
-## Configuration
+## ⚙️ Configuration
 
 By default, thoughts are saved to `~/thoughts/`.
 
@@ -113,7 +157,7 @@ Example:
 export THOUGHTS_EDITOR="code -w"
 ```
 
-## Sync & Backup
+## 🔄 Sync & Backup
 
 The "thoughts" utility includes powerful sync and backup capabilities to keep your notes safe and accessible across devices.
 
@@ -121,25 +165,25 @@ The "thoughts" utility includes powerful sync and backup capabilities to keep yo
 
 Initialize a Git repository for your thoughts:
 
-```
+```bash
 thoughts sync --init
 ```
 
 Commit changes to track your notes over time:
 
-```
+```bash
 thoughts sync --commit "Add meeting notes"
 ```
 
 Set up a remote repository (like GitHub):
 
-```
+```bash
 thoughts sync --remote https://github.com/yourusername/thoughts.git
 ```
 
 Push and pull changes:
 
-```
+```bash
 thoughts sync --push   # Push local changes to remote
 thoughts sync --pull   # Pull remote changes to local
 ```
@@ -151,7 +195,7 @@ thoughts sync --pull   # Pull remote changes to local
 To use cloud sync features, you'll need to install the appropriate command-line tools:
 
 - **For Dropbox sync**: Install [dbxcli](https://github.com/dropbox/dbxcli)
-  ```
+  ```bash
   # Install with Homebrew (macOS)
   brew install dbxcli
   
@@ -160,7 +204,7 @@ To use cloud sync features, you'll need to install the appropriate command-line 
   ```
 
 - **For Google Drive sync**: Install [drive](https://github.com/odeke-em/drive)
-  ```
+  ```bash
   # Install with Homebrew (macOS)
   brew install drive
   
@@ -172,42 +216,42 @@ To use cloud sync features, you'll need to install the appropriate command-line 
 
 Sync with Dropbox:
 
-```
+```bash
 thoughts sync --dropbox            # Sync to default /thoughts directory
 thoughts sync --dropbox /my/path   # Sync to custom path
 ```
 
 Sync with Google Drive:
 
-```
+```bash
 thoughts sync --gdrive             # Sync to default 'thoughts' directory
 thoughts sync --gdrive my/path     # Sync to custom path
 ```
 
-Note: The first time you run these commands, you may be prompted to authenticate with the respective cloud service.
+> **Note:** The first time you run these commands, you may be prompted to authenticate with the respective cloud service.
 
 ### Automatic Backups
 
 Create a one-time backup:
 
-```
+```bash
 thoughts backup                   # Creates backup in ~/thoughts_backup
 thoughts backup --path /my/path   # Creates backup in custom location
 ```
 
 Set up automatic backups:
 
-```
+```bash
 thoughts backup --auto daily      # Set up daily automatic backups
 thoughts backup --auto weekly     # Set up weekly automatic backups
 thoughts backup --auto monthly    # Set up monthly automatic backups
 ```
 
-## Terminal User Interface (TUI)
+## 🖥️ Terminal User Interface (TUI)
 
 The "thoughts" utility includes a rich terminal user interface for browsing and managing your notes:
 
-```
+```bash
 thoughts tui
 ```
 
@@ -234,11 +278,11 @@ thoughts tui
 | `q` or `Ctrl+C`| Quit TUI                                 |
 | `?`           | Show help screen                          |
 
-## Web Content Capture
+## 🌐 Web Content Capture
 
 Save web articles directly as notes with automatic parsing and formatting:
 
-```
+```bash
 thoughts save-url https://example.com/article
 ```
 
@@ -246,7 +290,7 @@ The web content will be saved as a new thought, with proper formatting, metadata
 
 The tool also remembers articles you've saved before, so it won't download and process the same URL multiple times. If you need to reprocess a URL (for example, if the content has been updated), use the `--force` flag:
 
-```
+```bash
 thoughts save-url https://example.com/article --force
 ```
 
@@ -254,7 +298,7 @@ thoughts save-url https://example.com/article --force
 
 Enhance web captures with Claude AI for intelligent summaries and content analysis:
 
-```
+```bash
 thoughts save-url https://example.com/article --summarize --api-key your_claude_api_key
 ```
 
@@ -265,7 +309,7 @@ export CLAUDE_API_KEY="your_claude_api_key"
 thoughts save-url https://example.com/article --summarize
 ```
 
-#### Audio Summaries
+### Audio Summaries
 
 Generate audio versions of AI summaries using your system's text-to-speech capabilities:
 
@@ -284,11 +328,11 @@ This feature uses your operating system's built-in text-to-speech capabilities:
 
 The audio file will be saved in the `web-content/audio` directory.
 
-## Bitbucket PR Integration
+## 🔄 Bitbucket PR Integration
 
 The "thoughts" utility includes powerful integration with Bitbucket Server, allowing you to save, tag, and search pull requests. This feature is designed to help developers create an easily searchable knowledge base of past development work.
 
-### Why Use PR Integration?
+### Why Use PR Integration
 
 - **Knowledge Preservation**: Capture the context and purpose of code changes that might be forgotten over time
 - **Searchable History**: Find PRs by technology, author, purpose, or content
@@ -299,7 +343,7 @@ The "thoughts" utility includes powerful integration with Bitbucket Server, allo
 
 First, configure your Bitbucket connection:
 
-```
+```bash
 thoughts pr --config
 ```
 
@@ -424,7 +468,7 @@ You can select any PR by number to open the full saved thought in your editor, w
 - Complete list of changed files
 - All generated and custom tags
 
-## Claude AI Integration
+## 🤖 Claude AI Integration
 
 The "thoughts" utility offers Claude AI integration for both web content and Bitbucket PRs.
 
@@ -475,9 +519,9 @@ Your Claude API key can be provided in several ways:
 2. **Environment variable**: `export CLAUDE_API_KEY="your_claude_api_key"`
 3. **Session-based**: Once set in your shell, all commands will use it
 
-## Command Reference
+## 📋 Command Reference
 
-```
+```bash
 Usage: thoughts [options] [command]
 
 A CLI for capturing and searching your thoughts
@@ -499,3 +543,17 @@ Commands:
   todo [options]                            Manage your todos using the Eisenhower Matrix
   help [command]                            display help for command
 ```
+
+## 👥 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
