@@ -21,7 +21,7 @@
     "fuse.js": "^7.1.0",
     "glob": "^10.3.10",
     "inquirer": "^9.2.12",
-    "jsdom": "^24.0.0",
+    "jsdom": "^26.0.0",
     "marked": "^9.1.5",
     "marked-terminal": "^7.3.0",
     "open": "^9.1.0",
