@@ -32,6 +32,6 @@
     "strip-ansi": "^7.1.0",
     "terminal-link": "^3.0.0",
     "turndown": "^7.1.2",
-    "uuid": "^9.0.1"
+    "uuid": "^11.0.0"
   }
 }
