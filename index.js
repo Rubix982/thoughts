@@ -1460,6 +1460,10 @@ program
     "--api-key <key>",
     "Claude API key (can also be set via CLAUDE_API_KEY env var)",
   )
+  .option(
+    "--repo-token <token>",
+    "Repository-specific access token for Bitbucket Cloud",
+  )
   .option("--search <text>", "Search PRs by text in title or tags")
   .option("--tag <tag>", "Filter PRs by tag")
   .option("--author <author>", "Filter PRs by author")
@@ -1477,7 +1481,8 @@ program
       // Create config directory if needed
       const configDir = path.join(
         process.env.HOME || process.env.USERPROFILE,
-        ".thoughts",
+        "thoughts",
+        ".config"
       );
       await fs.mkdir(configDir, { recursive: true });
 
@@ -1540,6 +1545,31 @@ program
 
       // Create Bitbucket processor
       const bitbucketProcessor = createBitbucketProcessor(config);
+      
+      // Test connection to diagnose authentication issues
+      try {
+        console.log(chalk.blue("Testing Bitbucket connection..."));
+        const testResult = await bitbucketProcessor.testConnection();
+        
+        if (!testResult.success) {
+          console.log(chalk.red("⚠️ Bitbucket connection test failed"));
+          console.log(chalk.yellow(`Error: ${testResult.message}`));
+          
+          if (testResult.error && testResult.error.suggestion) {
+            console.log(chalk.yellow(`Suggestion: ${testResult.error.suggestion}`));
+          }
+          
+          console.log(chalk.yellow("Try running 'thoughts pr --config' to update your credentials."));
+          
+          // Continue anyway since the user might be trying to list local PRs
+          console.log(chalk.blue("Continuing with operation, but API calls may fail..."));
+        } else {
+          console.log(chalk.green("✓ Bitbucket connection test succeeded"));
+        }
+      } catch (error) {
+        console.log(chalk.red(`Error testing Bitbucket connection: ${error.message}`));
+        // Continue anyway
+      }
 
       // Save PR as thought
       if (options.save) {
@@ -1572,6 +1602,7 @@ program
             tags: options.tags,
             notes: options.notes,
             claudeApiKey: claudeApiKey,
+            repoToken: options.repoToken,
           },
         );
 
