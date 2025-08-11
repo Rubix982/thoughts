@@ -15,7 +15,7 @@
     "chalk": "^5.3.0",
     "cheerio": "^1.0.0-rc.12",
     "cli-highlight": "^2.1.11",
-    "commander": "^11.1.0",
+    "commander": "^14.0.0",
     "date-fns": "^2.30.0",
     "fs-extra": "^11.3.0",
     "fuse.js": "^7.1.0",
