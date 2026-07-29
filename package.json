@@ -12,7 +12,7 @@
     "axios": "^1.6.7",
     "blessed": "^0.1.81",
     "blessed-contrib": "^1.0.11",
-    "chalk": "^5.3.0",
+    "chalk": "^6.0.0",
     "cheerio": "^1.0.0-rc.12",
     "cli-highlight": "^2.1.11",
     "commander": "^11.1.0",
